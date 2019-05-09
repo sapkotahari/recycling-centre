@@ -126,7 +126,7 @@ def save_table(fname,rec,event_points=10, positive_only=0,threshold=None):
                 file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
                                 str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
                                 str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
-                                str(isi.mean()/isi.std())+"\t"+str(coastline(chan)) +"\n")
+                                str(isi.std()/isi.mean())+"\t"+str(coastline(chan)) +"\n")
             
 def batch_open(folder_name):
     all_files=listdir(folder_name)
