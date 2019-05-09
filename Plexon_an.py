@@ -1,0 +1,152 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May  7 09:08:54 2019
+
+@author: localadmin1
+"""
+
+from tkinter.filedialog import askopenfilename, askdirectory
+from os import listdir
+from tkinter import Tk
+import pylab as pl
+import neo
+from math import floor
+import scipy.signal as sig
+from quantities import Hz, s
+#To do:
+#Funtion to remove artefacts
+#Standardise filtering
+
+def downsample(channel, factor,is_analog=1):
+    """ downsample of a certain factor a 100 samples array undersampled by 2
+    will be a 50 samples array
+    """
+    out=[]
+    out_size=int(len(channel)/factor)    
+    sample_size= float(len(channel))/out_size
+    for i in range(out_size):
+        out.append(channel[int(floor(i*sample_size))])
+    if is_analog==1: out=neo.AnalogSignal(signal=pl.array(out),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+    return out
+
+def downsample_to(channel, out_size):
+    """keeps the shape of the signal but squeezes it into a fixed-size array"""
+    return undersample(channel, int(floor(len(channel)/out_size)))
+
+
+def butter_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = sig.butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = sig.lfilter(b, a, data)
+    return y
+
+def bessel_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = sig.bessel(order, normal_cutoff, btype='low', analog=True)
+    return b, a
+
+def bessel_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = bessel_lowpass(cutoff, fs, order=order)
+    y = sig.lfilter(b, a, data)
+    return y
+
+def get_filenames():
+    """returns a list of Plexon filenames in a folder"""
+    Tk().withdraw() #this is to have a single window
+    file_list=askopenfolder()#check correct code
+    #cleanup flie_list for PLX only
+    return file_list
+    
+def opener(file_name):
+    """Returns a file a Neo Segment"""
+    reader= neo.io.PlexonIO(filename=fname)
+    rec = reader.read_segment()
+    return rec
+    
+def running_mean(x, N):
+    cumsum = pl.array(pl.cumsum(pl.insert(x, 0, 0)))
+    return (cumsum[N:] - cumsum[:-N]) / float(N)
+    
+def get_threshold(channel):
+    """gets the threshold as 4*SD"""
+    chan_ar=channel.as_array()
+    #Is the mean == channel baseline?
+    threshold= chan_ar.mean()+(4*chan_ar.std())
+    return threshold
+
+def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
+    """find peaks above a threshold, if positive_only==1 it only thaks positive peaks.
+    event_points gives number of points describing the event, 
+    high numbers will reduce false positive but increase false negatives """ 
+    if threshold==None: threshold=get_threshold(channel)
+     
+    #gets all the positive first
+    supra_thres=pl.where((channel.as_array())>get_threshold(channel),channel,0)
+    polarity=pl.greater
+    #find all possible peaks above positive threshold
+    event_inds=(sig.argrelextrema(supra_thres,polarity, axis=0, order=(event_points), mode='clip'))
+    event_inds=event_inds[0]
+     #if you also want the negatives
+    if positive_only!=1:#need to change polarity
+        print("Both positive and negative events will be analysed")
+        neg_supra_thres=pl.where((channel.as_array())<-get_threshold(channel),channel,0)
+        neg_event_inds=(sig.argrelextrema(neg_supra_thres,pl.less, axis=0, order=(event_points), mode='clip'))
+        neg_event_inds=neg_event_inds[0]
+        event_inds=list(event_inds)+list(neg_event_inds)
+    else: print("Only positive events will be analysed")
+    print("with a "+str(event_points)+"points time window")
+    return list(event_inds)
+
+def plot_spikes(channel,spk_ind):
+    """plots spikes as red dots on the black trace"""
+    ch_ar=channel.as_array()
+    pl.figure;
+    pl.plot(channel.times,channel,'k')
+    pl.plot(channel.times[spk_ind],ch_ar[spk_ind],'ro')
+ 
+def coastline(channel):
+    """returns the coastline using the formula in Niknazar et al.2013  
+    concatenate needs to be used for neo analog signals as eacy point is a separate array"""
+    return pl.sum(pl.absolute(pl.diff(pl.concatenate(channel.as_array()))))
+        
+
+def save_table(fname,rec,event_points=10, positive_only=0,threshold=None):
+    if fname[-4:].lower()=='.plx':
+        with open(fname[:-4]+".txt",'w') as file:
+            file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Coastline \n")
+            for chan in rec.analogsignals:
+                spk_ind=find_peaks(chan,event_points, positive_only,threshold)
+                isi=pl.diff(chan.times[spk_ind].magnitude)
+                file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
+                                str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
+                                str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
+                                str(isi.mean()/isi.std())+"\t"+str(coastline(chan)) +"\n")
+            
+def batch_open(folder_name):
+    all_files=listdir(folder_name)
+    rec_list=[]
+    for file in all_files:
+        if file.find(".plx")!=-1:
+            rec_list.append(file)
+    print(rec_list)
+    return rec_list
+
+
+if __name__=='__main__':
+"""if not imported as a module it batch analyses a folder with .plx files
+the files must all have a single sampling frequency"""
+    Tk().withdraw()
+    folder=askdirectory()
+    for fname in batch_open(folder):
+        print(fname)
+        reader= neo.io.PlexonIO(filename=folder+"/"+fname)
+        rec = reader.read_segment()
+        print(fname+' loading')
+        save_table(folder+"/"+ fname,rec)
+
