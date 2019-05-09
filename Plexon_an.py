@@ -2,7 +2,7 @@
 """
 Created on Tue May  7 09:08:54 2019
 
-@author: localadmin1
+@author: Vincenzo Marra
 """
 
 from tkinter.filedialog import askopenfilename, askdirectory
@@ -143,6 +143,7 @@ if __name__=='__main__':
 the files must all have a single sampling frequency"""
     Tk().withdraw()
     folder=askdirectory()
+    print("STILL NO MOVEMENT ARTIFACT REMOVAL!!!")
     for fname in batch_open(folder):
         print(fname)
         reader= neo.io.PlexonIO(filename=folder+"/"+fname)
