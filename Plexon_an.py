@@ -117,11 +117,18 @@ def coastline(channel):
 
 def find_art(rec):
     """find large events that go above threshold on more than one channel at the time
-    and returns their position""" 
-    if threshold==None: threshold=get_threshold(channel)     
-    #gets all the positive first
-    supra_thres=pl.where((channel.as_array())>get_threshold(channel),channel,0)
-    polarity=pl.greater
+    and returns their position. This only works with 16Channels array end files 
+    exported with  16 channels""" 
+    #pick channels to be used
+    chs=[rec.analogsignals[0].as_array(),rec.analogsignals[15].as_array()]#for now limited to two channels
+    art_threshold=0.8  #intended to be relative to the max value
+    supra_thres=[]
+    #take both positive and negative for both channels
+    for channel in chs:
+        supra_thres.append(list(pl.where((channel)>get_threshold(channel),channel,0))
+        +list(pl.where((channel)<-get_threshold(channel),channel,0)))
+    art_inds=list(set(chs[0])&set(chs[15]))
+    
     
     return art_inds
 
@@ -148,8 +155,8 @@ def batch_open(folder_name):
 
 
 if __name__=='__main__':
-"""if not imported as a module it batch analyses a folder with .plx files
-the files must all have a single sampling frequency"""
+    """if not imported as a module it batch analyses a folder with .plx files
+    the files must all have a single sampling frequency"""
     Tk().withdraw()
     folder=askdirectory()
     print("STILL NO MOVEMENT ARTIFACT REMOVAL!!!")
