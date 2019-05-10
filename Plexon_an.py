@@ -34,24 +34,24 @@ def downsample_to(channel, out_size):
     return undersample(channel, int(floor(len(channel)/out_size)))
 
 
-def butter_lowpass(cutoff, fs, order=5):
+def butter_lowpass(cutoff, fs, order=4):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = sig.butter(order, normal_cutoff, btype='low', analog=False)
+    b, a = sig.butter(order, normal_cutoff, btype='low', analog=True)
     return b, a
 
-def butter_lowpass_filter(data, cutoff, fs, order=5):
+def butter_lowpass_filter(data, cutoff, fs, order=4):
     b, a = butter_lowpass(cutoff, fs, order=order)
     y = sig.lfilter(b, a, data)
     return y
 
-def bessel_lowpass(cutoff, fs, order=5):
+def bessel_lowpass(cutoff, fs, order=4):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
     b, a = sig.bessel(order, normal_cutoff, btype='low', analog=True)
     return b, a
 
-def bessel_lowpass_filter(data, cutoff, fs, order=5):
+def bessel_lowpass_filter(data, cutoff, fs, order=4):
     b, a = bessel_lowpass(cutoff, fs, order=order)
     y = sig.lfilter(b, a, data)
     return y
@@ -114,7 +114,16 @@ def coastline(channel):
     """returns the coastline using the formula in Niknazar et al.2013  
     concatenate needs to be used for neo analog signals as eacy point is a separate array"""
     return pl.sum(pl.absolute(pl.diff(pl.concatenate(channel.as_array()))))
-        
+
+def find_art(rec):
+    """find large events that go above threshold on more than one channel at the time
+    and returns their position""" 
+    if threshold==None: threshold=get_threshold(channel)     
+    #gets all the positive first
+    supra_thres=pl.where((channel.as_array())>get_threshold(channel),channel,0)
+    polarity=pl.greater
+    
+    return art_inds
 
 def save_table(fname,rec,event_points=10, positive_only=0,threshold=None):
     if fname[-4:].lower()=='.plx':
