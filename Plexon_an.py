@@ -125,12 +125,11 @@ def find_art(rec):
     #pick channels to be used
     chs=[rec.analogsignals[0].as_array(),rec.analogsignals[15].as_array()]#for now limited to two channels
     art_threshold=0.8  #intended to be relative to the max value
-    supra_thres=[]
+    
     #take both positive and negative for both channels
-    for channel in chs:
-        supra_thres.append(list(pl.where((channel)>get_threshold(channel),channel,0))
-        +list(pl.where((channel)<-get_threshold(channel),channel,0)))
-    art_inds=list(set(supra_thres[0])&set(supra_thres[15]))
+    #for channel in chs:
+    
+    art_inds=list(set(supra_thres[0])&set(supra_thres[1]))
     
     
     return art_inds
