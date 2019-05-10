@@ -75,7 +75,10 @@ def running_mean(x, N):
     
 def get_threshold(channel):
     """gets the threshold as 4*SD"""
-    chan_ar=channel.as_array()
+    try:
+        chan_ar=channel.as_array()
+    except:
+        chan_ar=channel
     #Is the mean == channel baseline?
     threshold= chan_ar.mean()+(4*chan_ar.std())
     return threshold
@@ -127,7 +130,7 @@ def find_art(rec):
     for channel in chs:
         supra_thres.append(list(pl.where((channel)>get_threshold(channel),channel,0))
         +list(pl.where((channel)<-get_threshold(channel),channel,0)))
-    art_inds=list(set(chs[0])&set(chs[15]))
+    art_inds=list(set(supra_thres[0])&set(supra_thres[15]))
     
     
     return art_inds
