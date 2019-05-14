@@ -149,22 +149,21 @@ def find_art(rec):
 def save_table(fname,rec,event_points=10, positive_only=0,threshold=None, remove_big=1):
     if fname[-4:].lower()=='.plx':
         with open(fname[:-4]+".txt",'w') as file:
-            file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Coastline \n")
+            file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Total Coastline \t Duration \n")
             for  chan in rec.analogsignals:
                 if remove_big==1:
                     print("REMOVES BIG SPIKES ABOVE 8x SD")
                     old_chan_t_stop=chan.t_stop
                     chan=remove_large_spikes(chan)
-                    print("From channel "+str(chan.annotations['channel_id'])+ " it removed "+
+                print("From channel "+str(chan.annotations['channel_id'])+ " it removed "+
                           str(old_chan_t_stop-chan.t_stop))
-                else:
-                    spk_ind=find_peaks(chan,event_points, positive_only,threshold)
-                    isi=pl.diff(chan.times[spk_ind].magnitude)
-                    file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
-                                    str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
-                                    str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
-                                    str(isi.std()/isi.mean())+"\t"+str(coastline(chan)) +"\n")
-                
+                spk_ind=find_peaks(chan,event_points, positive_only,threshold)
+                isi=pl.diff(chan.times[spk_ind].magnitude)
+                file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
+                                str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
+                                str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
+                                str(isi.std()/isi.mean())+"\t"+str(coastline(chan)) +"\t"+ str(chan.t_stop.magnitude) +"\n")
+            
 def batch_open(folder_name):
     all_files=listdir(folder_name)
     rec_list=[]
