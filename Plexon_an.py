@@ -73,15 +73,21 @@ def running_mean(x, N):
     cumsum = pl.array(pl.cumsum(pl.insert(x, 0, 0)))
     return (cumsum[N:] - cumsum[:-N]) / float(N)
     
-def get_threshold(channel):
+def get_threshold(channel,sdmult=4):
     """gets the threshold as 4*SD"""
     try:
         chan_ar=channel.as_array()
     except:
         chan_ar=channel
     #Is the mean == channel baseline?
-    threshold= chan_ar.mean()+(4*chan_ar.std())
+    threshold= chan_ar.mean()+(sdmult*chan_ar.std())
     return threshold
+
+def remove_large_spikes(channel):
+    large_spikes_ind=a=pl.where(channel.as_array()>get_threshold(channel,8))[0]
+    channel_no_large_spikes= channel.duplicate_with_new_data(
+            pl.delete(channel,large_spikes_ind))
+    return channel_no_large_spikes
 
 def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     """find peaks above a threshold, if positive_only==1 it only thaks positive peaks.
@@ -134,18 +140,25 @@ def find_art(rec):
     
     return art_inds
 
-def save_table(fname,rec,event_points=10, positive_only=0,threshold=None):
+def save_table(fname,rec,event_points=10, positive_only=0,threshold=None, remove_big=1):
     if fname[-4:].lower()=='.plx':
         with open(fname[:-4]+".txt",'w') as file:
             file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Coastline \n")
-            for chan in rec.analogsignals:
-                spk_ind=find_peaks(chan,event_points, positive_only,threshold)
-                isi=pl.diff(chan.times[spk_ind].magnitude)
-                file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
-                                str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
-                                str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
-                                str(isi.std()/isi.mean())+"\t"+str(coastline(chan)) +"\n")
-            
+            for  chan in rec.analogsignals:
+                if remove_big==1:
+                    print("REMOVES BIG SPIKES ABOVE 8x SD")
+                    old_chan_t_stop=chan.t_stop
+                    chan=remove_large_spikes(chan)
+                    print("From channel "+str(chan.annotations['channel_id'])+ " it removed "+
+                          str(old_chan_t_stop-chan.t_stop))
+                else:
+                    spk_ind=find_peaks(chan,event_points, positive_only,threshold)
+                    isi=pl.diff(chan.times[spk_ind].magnitude)
+                    file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
+                                    str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
+                                    str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
+                                    str(isi.std()/isi.mean())+"\t"+str(coastline(chan)) +"\n")
+                
 def batch_open(folder_name):
     all_files=listdir(folder_name)
     rec_list=[]
@@ -161,7 +174,7 @@ if __name__=='__main__':
     the files must all have a single sampling frequency"""
     Tk().withdraw()
     folder=askdirectory()
-    print("STILL NO MOVEMENT ARTIFACT REMOVAL!!!")
+    
     for fname in batch_open(folder):
         print(fname)
         reader= neo.io.PlexonIO(filename=folder+"/"+fname)
