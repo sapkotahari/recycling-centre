@@ -84,7 +84,13 @@ def get_threshold(channel,sdmult=4):
     return threshold
 
 def remove_large_spikes(channel):
-    large_spikes_ind=a=pl.where(channel.as_array()>get_threshold(channel,8))[0]
+    #find positive spikes
+    large_pos_spikes_ind=a=pl.where(channel.as_array()>get_threshold(channel,8))[0]
+    #find negative spikes
+    large_neg_spikes_ind=a=pl.where(channel.as_array()<-get_threshold(channel,8))[0]
+    #put them together 
+    large_spikes_ind=list(large_pos_spikes_ind)+list(large_neg_spikes_ind)
+    #remove them
     channel_no_large_spikes= channel.duplicate_with_new_data(
             pl.delete(channel,large_spikes_ind))
     return channel_no_large_spikes
