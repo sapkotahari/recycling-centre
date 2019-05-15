@@ -115,7 +115,7 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
         neg_event_inds=neg_event_inds[0]
         event_inds=list(event_inds)+list(neg_event_inds)
     else: print("Only positive events will be analysed")
-    print("with a "+str(event_points)+"points time window")
+    print("with a "+str(event_points)+" points time window")
     return list(event_inds)
 
 def plot_spikes(channel,spk_ind):
@@ -152,7 +152,7 @@ def save_table(fname,rec,event_points=10, positive_only=0,threshold=None, remove
             file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Total Coastline \t Duration (s) \t Norm Coastline \n")
             for  chan in rec.analogsignals:
                 if remove_big==1:
-                    SD_mult=7
+                    SD_mult=7 #change the number here is you want to SD multiplier for rejections
                     print("REMOVES BIG SPIKES ABOVE "+ str(SD_mult)+"x SD")
                     old_chan_t_stop=chan.t_stop
                     chan=remove_large_spikes(chan, SD_mult)
