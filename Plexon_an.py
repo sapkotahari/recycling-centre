@@ -152,9 +152,10 @@ def save_table(fname,rec,event_points=10, positive_only=0,threshold=None, remove
             file.writelines("Channel \t Mean mV \t StDev \t N.Spikes \t Mean Spike Freq Hz \t CV(ISI) \t Total Coastline \t Duration (s) \t Norm Coastline \n")
             for  chan in rec.analogsignals:
                 if remove_big==1:
-                    print("REMOVES BIG SPIKES ABOVE 8x SD")
+                    SD_mult=7
+                    print("REMOVES BIG SPIKES ABOVE "+ str(SD_mult)+"x SD")
                     old_chan_t_stop=chan.t_stop
-                    chan=remove_large_spikes(chan)
+                    chan=remove_large_spikes(chan, SD_mult)
                 print("From channel "+str(chan.annotations['channel_id'])+ " it removed "+
                           str(old_chan_t_stop-chan.t_stop))
                 spk_ind=find_peaks(chan,event_points, positive_only,threshold)
