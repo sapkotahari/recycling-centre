@@ -18,8 +18,8 @@ from quantities import Hz, s
 #Standardise filtering
 
 def downsample(channel, factor,is_analog=1):
-    """ downsample of a certain factor a 100 samples array undersampled by 2
-    will be a 50 samples array
+    """ downsample of a certain factor a 100 samples array downsampled by 2
+    will be a 50 samples array of the same time duration
     """
     out=[]
     out_size=int(len(channel)/factor)    
@@ -31,7 +31,7 @@ def downsample(channel, factor,is_analog=1):
 
 def downsample_to(channel, out_size):
     """keeps the shape of the signal but squeezes it into a fixed-size array"""
-    return undersample(channel, int(floor(len(channel)/out_size)))
+    return downsample(channel, int(floor(len(channel)/out_size)))
 
 
 def butter_lowpass(cutoff, fs, order=4):
