@@ -7,7 +7,6 @@ Created on Wed May 15 17:15:14 2019
 from tkinter.filedialog import askopenfilename, askdirectory
 from os import listdir
 from tkinter import Tk
-import pylab as pl
 import neo
 from math import floor
 import scipy.signal as sig

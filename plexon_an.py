@@ -8,7 +8,8 @@ Created on Tue May  7 09:08:54 2019
 from tkinter.filedialog import askopenfilename, askdirectory
 from os import listdir
 from tkinter import Tk
-import pylab as pl
+import matplotlib.pyplot as plt
+import numpy as np
 import neo
 from math import floor
 import scipy.signal as sig
@@ -20,15 +21,15 @@ from quantities import Hz, s
 def array2analog(array,channel):
     """Takes a numpy array and a neo analogsignal as channel and returns the array as a new 
     analog signal with the same units and sampling_rate of channel"""
-    return neo.AnalogSignal(signal=pl.array(array),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+    return neo.AnalogSignal(signal=np.array(array),units=channel.units, sampling_rate=channel.sampling_rate)
 
 def running_mean(array,window):
     """Gets a moving average over a window of int points"""    
-    avg_mask=pl.ones(window) / window
+    avg_mask=np.ones(window) / window
     try:
-        run_mean=pl.convolve(array.as_array()[:,0], avg_mask, 'same')
+        run_mean=np.convolve(array.as_array()[:,0], avg_mask, 'same')
     except:
-        run_mean=pl.convolve(array, avg_mask, 'same')
+        run_mean=np.convolve(array, avg_mask, 'same')
         pass
     return run_mean
 
@@ -42,7 +43,7 @@ def downsample(channel, factor):
     for i in range(out_size):
         out.append(channel[int(floor(i*sample_size))])
     try :
-        out=neo.AnalogSignal(signal=pl.array(out),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+        out=neo.AnalogSignal(signal=np.array(out),units=channel.units, sampling_rate=channel.sampling_rate/factor)
     except: 
         pass
     return out
@@ -100,14 +101,14 @@ def get_threshold(channel,sdmult=4):
 
 def remove_large_spikes(channel, large_spk_mult=7):
     #find positive spikes
-    large_pos_spikes_ind=a=pl.where(channel.as_array()>get_threshold(channel,large_spk_mult))[0]
+    large_pos_spikes_ind=np.where(channel.as_array()>get_threshold(channel,large_spk_mult))[0]
     #find negative spikes
-    large_neg_spikes_ind=a=pl.where(channel.as_array()<-get_threshold(channel,large_spk_mult))[0]
+    large_neg_spikes_ind=np.where(channel.as_array()<-get_threshold(channel,large_spk_mult))[0]
     #put them together 
     large_spikes_ind=list(large_pos_spikes_ind)+list(large_neg_spikes_ind)
     #remove them
     channel_no_large_spikes= channel.duplicate_with_new_data(
-            pl.delete(channel,large_spikes_ind))
+            np.delete(channel,large_spikes_ind))
     return channel_no_large_spikes
 
 def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
@@ -117,16 +118,16 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     if threshold==None: threshold=get_threshold(channel)
      
     #gets all the positive first
-    supra_thres=pl.where((channel.as_array())>get_threshold(channel),channel,0)
-    polarity=pl.greater
+    supra_thres=np.where((channel.as_array())>get_threshold(channel),channel,0)
+    polarity=np.greater
     #find all possible peaks above positive threshold
     event_inds=(sig.argrelextrema(supra_thres,polarity, axis=0, order=(event_points), mode='clip'))
     event_inds=event_inds[0]
      #if you also want the negatives
     if positive_only!=1:#need to change polarity
         print("Both positive and negative events will be analysed")
-        neg_supra_thres=pl.where((channel.as_array())<-get_threshold(channel),channel,0)
-        neg_event_inds=(sig.argrelextrema(neg_supra_thres,pl.less, axis=0, order=(event_points), mode='clip'))
+        neg_supra_thres=np.where((channel.as_array())<-get_threshold(channel),channel,0)
+        neg_event_inds=(sig.argrelextrema(neg_supra_thres,np.less, axis=0, order=(event_points), mode='clip'))
         neg_event_inds=neg_event_inds[0]
         event_inds=list(event_inds)+list(neg_event_inds)
     else: print("Only positive events will be analysed")
@@ -137,14 +138,14 @@ def plot_spikes(channel,spk_ind=None):
     """plots spikes as red dots on the black trace"""
     if spk_ind==None: find_peaks(channel)
     ch_ar=channel.as_array()
-    pl.figure;
-    pl.plot(channel.times,channel,'k')
-    pl.plot(channel.times[spk_ind],ch_ar[spk_ind],'ro')
+    plt.figure;
+    plt.plot(channel.times,channel,'k')
+    plt.plot(channel.times[spk_ind],ch_ar[spk_ind],'ro')
  
 def coastline(channel):
     """returns the coastline using the formula in Niknazar et al.2013  
     only the array part of the neo analog signals is used"""
-    return pl.sum(pl.absolute(pl.diff(channel.as_array()[:,0])))
+    return np.sum(np.absolute(np.diff(channel.as_array()[:,0])))
 
 def find_art(rec):
     """find large events that go above threshold on more than one channel at the time
@@ -175,7 +176,7 @@ def save_table(fname,rec,event_points=10, positive_only=0,threshold=None, remove
                 print("From channel "+str(chan.annotations['channel_id'])+ " it removed "+
                           str(old_chan_t_stop-chan.t_stop))
                 spk_ind=find_peaks(chan,event_points, positive_only,threshold)
-                isi=pl.diff(chan.times[spk_ind].magnitude)
+                isi=np.diff(chan.times[spk_ind].magnitude)
                 file.writelines("Channel "+str(chan.annotations['channel_id'])+"\t"+
                                 str(chan.mean().magnitude) + "\t" + str(chan.std().magnitude) + "\t"+
                                 str(len(spk_ind))+ "\t" + str(len(spk_ind)/chan.t_stop.magnitude)+ "\t"+
@@ -191,14 +192,13 @@ def batch_open(folder_name):
     print(rec_list)
     return rec_list
 
-def plot_all_channels(rec):
+#def plot_all_channels(rec):
     #To DO!
     
 
 
 if __name__=='__main__':
-    """if not imported as a module it batch analyses a folder with .plx files
-    the files must all have a single sampling frequency"""
+    """if not imported as a module it batch analyses a folder with .plx file the files must all have a single sampling frequency"""
     Tk().withdraw()
     folder=askdirectory()
     
