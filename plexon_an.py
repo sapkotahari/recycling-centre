@@ -17,16 +17,34 @@ from quantities import Hz, s
 #Funtion to remove artefacts
 #Standardise filtering
 
-def downsample(channel, factor,is_analog=1):
+def array2analog(array,channel):
+    """Takes a numpy array and a neo analogsignal as channel and returns the array as a new 
+    analog signal with the same units and sampling_rate of channel"""
+    return neo.AnalogSignal(signal=pl.array(array),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+
+def running_mean(array,window):
+    """Gets a moving average over a window of int points"""    
+    avg_mask=pl.ones(window) / window
+    try:
+        run_mean=pl.convolve(array.as_array()[:,0], avg_mask, 'same')
+    except:
+        run_mean=pl.convolve(array, avg_mask, 'same')
+        pass
+    return run_mean
+
+def downsample(channel, factor):
     """ downsample of a certain factor a 100 samples array downsampled by 2
-    will be a 50 samples array of the same time duration
-    """
+    will be a 50 samples array of the same time duration"""
+    run_mean=running_mean(channel,factor)
     out=[]
     out_size=int(len(channel)/factor)    
     sample_size= float(len(channel))/out_size
     for i in range(out_size):
         out.append(channel[int(floor(i*sample_size))])
-    if is_analog==1: out=neo.AnalogSignal(signal=pl.array(out),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+    try :
+        out=neo.AnalogSignal(signal=pl.array(out),units=channel.units, sampling_rate=channel.sampling_rate/factor)
+    except: 
+        pass
     return out
 
 def downsample_to(channel, out_size):
@@ -69,9 +87,6 @@ def opener(file_name):
     rec = reader.read_segment()
     return rec
     
-def running_mean(x, N):
-    cumsum = pl.array(pl.cumsum(pl.insert(x, 0, 0)))
-    return (cumsum[N:] - cumsum[:-N]) / float(N)
     
 def get_threshold(channel,sdmult=4):
     """gets the threshold as 4*SD"""
@@ -118,8 +133,9 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     print("with a "+str(event_points)+" points time window")
     return list(event_inds)
 
-def plot_spikes(channel,spk_ind):
+def plot_spikes(channel,spk_ind=None):
     """plots spikes as red dots on the black trace"""
+    if spk_ind==None: find_peaks(channel)
     ch_ar=channel.as_array()
     pl.figure;
     pl.plot(channel.times,channel,'k')
@@ -127,8 +143,8 @@ def plot_spikes(channel,spk_ind):
  
 def coastline(channel):
     """returns the coastline using the formula in Niknazar et al.2013  
-    concatenate needs to be used for neo analog signals as eacy point is a separate array"""
-    return pl.sum(pl.absolute(pl.diff(pl.concatenate(channel.as_array()))))
+    only the array part of the neo analog signals is used"""
+    return pl.sum(pl.absolute(pl.diff(channel.as_array()[:,0])))
 
 def find_art(rec):
     """find large events that go above threshold on more than one channel at the time
@@ -174,6 +190,10 @@ def batch_open(folder_name):
             rec_list.append(file)
     print(rec_list)
     return rec_list
+
+def plot_all_channels(rec):
+    #To DO!
+    
 
 
 if __name__=='__main__':
