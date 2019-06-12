@@ -11,6 +11,7 @@ import neo
 from math import floor
 import scipy.signal as sig
 from quantities import Hz, s
+import numpy as np
 from plexon_an import *
 
 Tk().withdraw()
@@ -23,3 +24,6 @@ channel=rec.analogsignals[canale-1]
 channel=remove_large_spikes(channel, 7) #change number to change visualised
 plot_spikes(channel,find_peaks(channel))
 
+MEA=np.empty([len(rec.analogsignals),len(rec.analogsignals[0])])
+plt.matshow(MEA[:,:300])
+CSD=np.diff(np.diff(MEA,axis=0),axis=0)
