@@ -52,6 +52,12 @@ def downsample_to(channel, out_size):
     """keeps the shape of the signal but squeezes it into a fixed-size array"""
     return downsample(channel, int(floor(len(channel)/out_size)))
 
+def downsample_matrix_to(MATRIX,out_size):
+    """Takes a 2D matrix and cuts the second dimension to the required out_size"""
+    OUT_MATRIX=np.empty((len(MATRIX),out_size))
+    for c,v in enumerate(MATRIX):
+        OUT_MATRIX[c]=downsample_to(v,out_size)
+    return OUT_MATRIX
 
 def butter_lowpass(cutoff, fs, order=4):
     nyq = 0.5 * fs
