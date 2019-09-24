@@ -19,8 +19,10 @@ Tk().withdraw()
 fname=askopenfilename()
 reader= neo.io.PlexonIO(filename=fname)
 rec = reader.read_segment()
+
+canale=input("What channel? (type number or ALL and press enter)")
+
 if 1==0:
-    canale=1 #change number to change channel
     channel=rec.analogsignals[canale-1]
     channel=remove_large_spikes(channel, 7) #change number to change visualised
     plot_spikes(channel,find_peaks(channel))
