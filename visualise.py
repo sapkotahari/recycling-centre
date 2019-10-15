@@ -21,15 +21,17 @@ fname=askopenfilename()
 reader= neo.io.PlexonIO(filename=fname)
 rec = reader.read_segment()
 
-selcan=input("What channel? (type number or ALL and press enter)")
-
+selcan=input("What channel? (type number or ALL and press enter) ")
+linw=float(input("How thick do you want the line? 0.1 is very thin 2 is very thick "))
+starplot=int(1000*float(input("First point to plot? type 0 if you want the all trace ")))
+endplot=int(1000*float(input("Last point to plot? type 299 if you want the all trace ")))
 showspikes=0
 
 if selcan.upper()!="ALL":
-    channel=rec.analogsignals[int(selcan)-1]
+    channel=rec.analogsignals[int(selcan)-1][starplot:endplot]
     channel=remove_large_spikes(channel, 7) #change number to change visualised
     if showspikes==1: plot_spikes(channel,find_peaks(channel))
-    else: plt.plot(channel.times,channel, 'k')
+    else: plt.plot(channel.times,channel, 'k', linewidth=linw)
 else:
     maxlist=[]
     minlist=[]
@@ -37,6 +39,7 @@ else:
     t=[]
     for i in rec.analogsignals:
         i=remove_large_spikes(i, 7) #change number to change visualised
+        i=i[starplot:endplot] #change the range to plot 
         arrchan.append(i.as_array())
         t.append(i.times)
         maxlist.append(max(i.as_array()))
@@ -44,10 +47,11 @@ else:
 
     fig, axs = plt.subplots(16, 1)
     for s,c in enumerate(arrchan):
-        axs[s].plot(t[s],c, 'k')
+        axs[s].plot(t[s],c, 'k', linewidth=linw)
         axs[s].set_ylim(min(minlist), max(maxlist))
         axs[s].set_xlabel('time')
         axs[s].set_ylabel('uV')
+        
 
     plt.show()
     plt.savefig(fname[:-3]+'svg')
@@ -69,3 +73,5 @@ if twodplots==1:
         plt.matshow(np.corrcoef(RECM[:,k:k+1000]))
         plt.colorbar()
 
+
+    
