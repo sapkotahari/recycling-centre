@@ -61,15 +61,18 @@ class MEA_rec(object):
         plt.xlabel("ms")
         plt.ylabel("mV")
 
+
 def fepsp_slope(trace):
     """finds the 20-80% slope using a diff approach for a fEPSP"""
-    bsl=trace[0:3]
+    bsl=np.mean(trace[0:3])
     peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1])
-    amp=val_dist(bsl,peak)
-    twenty=find_nearest(trace[0:np.argmin(trace)],amp*0.2)
-    eighty=find_nearest(trace[0:np.argmin(trace)],amp*0.8)
+    amp=trf.val_dist(bsl,peak)
+    
+    twenty=trf.find_nearest(trace[0:np.argmin(trace)],amp*0.2)
+    eighty=trf.find_nearest(trace[0:np.argmin(trace)],amp*0.8)
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope
+
     
     
 
@@ -81,8 +84,11 @@ if __name__ == "__main__":
     #assuming less that 4 ms slope at 20KHz sampling rate
     epsp1start=int(20*float(input("Start time slope 1: "))) #index on trace
     epsp2start=int(20*float(input("Start time slope 2: ")))
-    epsps1slopes=[]
-    epsps2slopes=[]
-    for i in rec1.get_chan(chan):
-        epsp1slopes.append(fepsp_slope(i[epsp1start:epsp1start+80]))
-        epsp2slopes.append(fepsp_slope(i[epsp2start:epsp2start+80]))
+    epsp1slopes=[]
+    epsp2slopes=[]
+    for i in range(1,rec1.sweep_n+1):
+        epsp1slopes.append(fepsp_slope(rec1.get_chan(chan,i)[epsp1start:epsp1start+80].values))
+        epsp2slopes.append(fepsp_slope(rec1.get_chan(chan,i)[epsp2start:epsp2start+80].values))
+    print(epsp1slopes)
+    print(epsp2slopes)
+        
