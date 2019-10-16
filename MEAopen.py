@@ -12,7 +12,9 @@ Class to handle MEA recordings converted to excel CSV with Panasonic MED64
 from tkinter.filedialog import askopenfilename, Tk
 import pandas as pd
 import re
-import pylab as pl
+import matplotlib.pyplot as plt
+import numpy as np
+import tracefunc as trf
 
 class MEA_rec(object):
     def __init__(self, file_name):
@@ -54,14 +56,33 @@ class MEA_rec(object):
     
     def plot_chan(self, channel,sweep=None):
         
-        pl.plot(self.get_time(sweep),self.get_chan(channel, sweep))
-        pl.title("Channel " + str(channel)+" Sweep " + str(sweep))
-        pl.xlabel("ms")
-        pl.ylabel("mV")
+        plt.plot(self.get_time(sweep),self.get_chan(channel, sweep))
+        plt.title("Channel " + str(channel)+" Sweep " + str(sweep))
+        plt.xlabel("ms")
+        plt.ylabel("mV")
 
-
+def fepsp_slope(trace):
+    """finds the 20-80% slope using a diff approach for a fEPSP"""
+    bsl=trace[0:3]
+    peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1])
+    amp=val_dist(bsl,peak)
+    twenty=find_nearest(trace[0:np.argmin(trace)],amp*0.2)
+    eighty=find_nearest(trace[0:np.argmin(trace)],amp*0.8)
+    slope=np.mean(np.diff(trace[twenty:eighty]))
+    return slope
+    
+    
 
 if __name__ == "__main__":
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearin
     file_name = askopenfilename() # show an "Open" dialog box and return the path to the selected file
     rec1=MEA_rec(file_name)
+    chan=int(input("What channel do you want to analyse? "))
+    #assuming less that 4 ms slope at 20KHz sampling rate
+    epsp1start=int(20*float(input("Start time slope 1: "))) #index on trace
+    epsp2start=int(20*float(input("Start time slope 2: ")))
+    epsps1slopes=[]
+    epsps2slopes=[]
+    for i in rec1.get_chan(chan):
+        epsp1slopes.append(fepsp_slope(i[epsp1start:epsp1start+80]))
+        epsp2slopes.append(fepsp_slope(i[epsp2start:epsp2start+80]))
