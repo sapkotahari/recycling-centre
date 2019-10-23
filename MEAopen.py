@@ -51,13 +51,20 @@ class MEA_rec(object):
             chan_val=chan_val.loc[sweep]
         return chan_val
     
+    def chan2matrix(self, channel):
+        chandata=self.get_chan(channel)
+        mat=np.zeros((int(chandata.size/self.sweep_n),self.sweep_n))
+        for i,j in enumerate(chandata.index.drop_duplicates()):
+            mat[:,i]=chandata.loc[j]
+        return mat
+    
     def get_time(self,sweep=None):
         return self.get_chan("T(ms)",sweep)
     
-    def plot_chan(self, channel,sweep=None):
+    def plot_chan(self, channel):
         
-        plt.plot(self.get_time(sweep),self.get_chan(channel, sweep))
-        plt.title("Channel " + str(channel)+" Sweep " + str(sweep))
+        plt.plot(self.get_time(1),self.chan2matrix(channel))
+        plt.title("Channel " + str(channel))
         plt.xlabel("ms")
         plt.ylabel("mV")
 
@@ -68,8 +75,8 @@ def fepsp_slope(trace):
     peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1])
     amp=trf.val_dist(bsl,peak)
     
-    twenty=trf.find_nearest(trace[0:np.argmin(trace)],amp*0.2)
-    eighty=trf.find_nearest(trace[0:np.argmin(trace)],amp*0.8)
+    twenty=trf.find_nearest(trace[0:np.argmin(trace)],bsl-amp*0.2)
+    eighty=trf.find_nearest(trace[0:np.argmin(trace)],bsl-amp*0.8)
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope
 
