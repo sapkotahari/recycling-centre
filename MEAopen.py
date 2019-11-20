@@ -80,14 +80,14 @@ def fepsp_slope(trace):
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope
 
-def do_analysis(rec):
+def do_analysis(rec,first_sweep=1):
     chan=int(input("What channel do you want to analyse? "))
     #assuming less that 4 ms slope at 20KHz sampling rate
     epsp1start=int(20*float(input("Start time slope 1: "))) #index on trace
     epsp2start=int(20*float(input("Start time slope 2: ")))
     epsp1slopes=[]
     epsp2slopes=[]
-    for i in range(1,rec.sweep_n+1):
+    for i in range(first_sweep,rec.sweep_n+1):
         epsp1slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp1start:epsp1start+80].values))
         epsp2slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
     print(epsp1slopes)
