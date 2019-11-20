@@ -80,13 +80,7 @@ def fepsp_slope(trace):
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope
 
-    
-    
-
-if __name__ == "__main__":
-    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearin
-    file_name = askopenfilename() # show an "Open" dialog box and return the path to the selected file
-    rec1=MEA_rec(file_name)
+def do_analysis(rec):
     chan=int(input("What channel do you want to analyse? "))
     #assuming less that 4 ms slope at 20KHz sampling rate
     epsp1start=int(20*float(input("Start time slope 1: "))) #index on trace
@@ -98,4 +92,16 @@ if __name__ == "__main__":
         epsp2slopes.append(fepsp_slope(rec1.get_chan(chan,i)[epsp2start:epsp2start+80].values))
     print(epsp1slopes)
     print(epsp2slopes)
+    
+    
+
+if __name__ == "__main__":
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearin
+    file_name = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    rec=MEA_rec(file_name)
+
+#to plt a channel type: rec.plot_chan(CHAN_NUMBER)
+#to run the analysis type: do_analisys(rec)
+
+
         
