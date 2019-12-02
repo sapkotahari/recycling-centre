@@ -72,7 +72,9 @@ class MainApp():
             self.slideR1.grid(column=1, row=6)
             self.slideR2 = tk.Scale(master, from_=0, to=100, resolution=0.05, orient='horizontal', length=400,
                                     variable = self.t_startR2, command=self.plot_response)#needs to be just subplot
-            self.slideR2.grid(column=1, row=7)            
+            self.slideR2.grid(column=1, row=7)
+            self.analysis_button = tk.Button(master, text="Open", command=mea.do_analysis)
+            self.analysis_button.grid(column=1, row=8)
             
     def openMEA(self):
         self.file_name = askopenfilename()
