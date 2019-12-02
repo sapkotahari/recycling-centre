@@ -80,7 +80,8 @@ def fepsp_slope(trace):
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope
 
-def do_analysis(rec,first_sweep=1):
+def do_analysis(rec,first_sweep=1, save =0):
+    """runs analysis of two slope resposenses"""
     chan=int(input("What channel do you want to analyse? "))
     #assuming less that 4 ms slope at 20KHz sampling rate
     epsp1start=int(20*float(input("Start time slope 1: "))) #index on trace
@@ -92,8 +93,18 @@ def do_analysis(rec,first_sweep=1):
         epsp2slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
     print(epsp1slopes)
     print(epsp2slopes)
-    
-    
+    if save>0:
+    #this will save the slope values in a file
+        heading="Response 1 \t PPR \n "
+        outlist=[]
+        for j,k in zip(epsp1slopes,epsp2slopes):
+            outlist.append(str(j)+' \t '+str(k/j)+' \n')
+        outfile=rec.file_name[:outfile.rfind'.']+'.dat'
+        f=open(outfile,'w')
+        f.seek(0)
+        f.write(heading)
+        f.writelines(outlist)
+        f.close()
 
 if __name__ == "__main__":
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearin
