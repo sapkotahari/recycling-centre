@@ -60,6 +60,9 @@ class MainApp():
             self.fig = Figure(figsize=(8, 7), dpi=100)
             self.canvas = FigureCanvasTkAgg(self.fig, master)  # A tk.DrawingArea.
             self.canvas.get_tk_widget().grid(column=1, row=4)
+            #subplots
+            self.axs=([self.fig.add_subplot(211,xlabel='ms',ylabel='mV'),
+                       self.fig.add_subplot(223,xlabel='ms',ylabel='mV'),self.fig.add_subplot(224,xlabel='ms',ylabel='mV')])
             #workaround as Navigationtoolbar seems to only work with .pack and it's not comaptible with frame
             self.toolbarFrame = tk.Frame(master=root)
             self.toolbarFrame.grid(column=1, row=5)
@@ -67,44 +70,93 @@ class MainApp():
             #sliders for subplots
             tk.Label(self.master, text='Response 1').grid(column=0, row=6)
             tk.Label(self.master, text='Response 2').grid(column=0, row=7)
-            self.slideR1 = tk.Scale(master, from_=0, to=100, resolution=0.05, orient='horizontal', length=400,
-                                    variable = self.t_startR1, command=self.plot_response)#needs to be just subplot
+            self.slideR1 = tk.Scale(master, from_=0, to=100, resolution=0.1, orient='horizontal', length=400,
+                                    variable = self.t_startR1, command=self.plot_traces)#needs to be just subplot
             self.slideR1.grid(column=1, row=6)
-            self.slideR2 = tk.Scale(master, from_=0, to=100, resolution=0.05, orient='horizontal', length=400,
-                                    variable = self.t_startR2, command=self.plot_response)#needs to be just subplot
+            self.slideR2 = tk.Scale(master, from_=0, to=100, resolution=0.1, orient='horizontal', length=400,
+                                    variable = self.t_startR2, command=self.plot_traces)#needs to be just subplot
             self.slideR2.grid(column=1, row=7)
-            self.analysis_button = tk.Button(master, text="Open", command=mea.do_analysis)
-            self.analysis_button.grid(column=1, row=8)
+            self.analysis_button = tk.Button(master, text="Analysis", command=self.slope_analysis)
+            self.analysis_button.grid(column=3, row=6)
+            self.savesvg_button = tk.Button(master, text="Save SVG", command=self.save_svg)
+            self.savesvg_button.grid(column=3, row=7)
             
     def openMEA(self):
         self.file_name = askopenfilename()
-        self.rec=mea.MEA_rec(file_name)
-        self.chan_combo['values']=self.rec.channels
-        self.chan_combo.current(self.rec.channels[0])
-        self.sweep_combo['values']=tuple(range(1, self.rec.sweep_n))
+        self.rec=mea.MEA_rec(self.file_name)
+        self.chan_combo['values']=self.rec.chan_list
+        self.chan_combo.current(0)
+        self.sweep_combo['values']=('All',)+tuple(range(1, self.rec.sweep_n))
+        self.sweep_combo.current(0)
+        self.label_file()
     def label_file(self):
         if self.file_name!='':
             self.file_label['text']=self.file_name[self.file_name.rfind('/')+1:]#writes filename only
+    
+    
+    #needs to decide whether to have one single function for all plots or not
     def plot_traces(self):
         chan=self.chan_combo.get()
-        sweep=int(self.sweep_combo.get())
-        R1=self.t_startR1
-        R2=self.t_startR2
-        self.label_file()
+
+        if self.sweep_combo.get()!='All': 
+            sweep=int(self.sweep_combo.get())
+
+        R1=self.t_startR1.get()
+        R2=self.t_startR2.get()
+
         t = np.arange(0, 3, .01)
-        self.fig.add_subplot(211).plot(self.rec.get_time(1),self.rec.chan2matrix(chan)) #change to actual trace
-        self.fig.add_subplot(223).plot(t, 2 * np.sin(2 * np.pi * t),'o') #change to actual trace
-        self.fig.add_subplot(224).plot(t, 2 * np.sin(2 * np.pi * t),'r') #change to actual trace
+
+        for i in self.axs:
+            i.clear()  #self.ax = self.fig.add_subplot(111)
+
+        
+
+        
+        self.axs[0].plot(self.rec.get_time(),self.rec.chan2matrix(chan))
+        self.axs[1].plot(t, R1+2 * np.sin(2 * np.pi * t),'o') #change to actual trace
+        self.axs[2].plot(t, 2 * np.sin(2 * np.pi * t),'r') #change to actual trace
         self.canvas.draw()
-    def plot_main():
-        #to do
-        a=1
-    def plot_response():
-        #to do
-        a=1
-    def openMEA(self):
-        self.file_name = askopenfilename()
-        self.rec=mea.MEA_rec(file_name)
+
+        
+
+        
+
+        
+        
+    def save_svg(self):
+        self.fig.savefig(self.file_name[:self.file_name.rfind('.')]+self.chan_combo.get()+'.svg')
+    
+    def slope_analysis(self):
+        chan=self.chan_combo.get()
+        rec=self.rec
+        R1=self.t_startR1.get()
+        R2=self.t_startR2.get()
+        first_sweep=1
+        epsp1start=int(20*R1) #only works for 20KHz sampling
+        epsp2start=int(20*R2) #only works for 20KHz sampling
+        epsp1slopes=[]
+        epsp2slopes=[]
+        for i in range(first_sweep,rec.sweep_n+1):
+            epsp1slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[epsp1start:epsp1start+80].values))
+            epsp2slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
+        print(epsp1slopes)
+        print(epsp2slopes)
+        save=1
+        if save>0:
+            #this will save the slope values in a file
+            heading="Response 1 \t PPR (R2/R1)\n "
+            outlist=[]
+            for j,k in zip(epsp1slopes,epsp2slopes):
+                outlist.append(str(j)+' \t '+str(k/j)+' \n')
+            outfile=self.file_name[:self.file_name.rfind('.')]+'.dat'
+            f=open(outfile,'w')
+            f.seek(0)
+            f.write(heading)
+            f.writelines(outlist)
+            f.close()
+        
+        
+
         
 
 

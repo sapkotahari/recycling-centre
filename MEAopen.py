@@ -29,6 +29,7 @@ class MEA_rec(object):
             rec_file.seek(0)
             self.rec_data=pd.read_csv(rec_file, skiprows= self.sweep_rows[1:],header=1)
             print(self.rec_info)#do stuff
+            self.chan_list=self.channels[self.channels.find(',')+1:-1].split(",")#creating a list with channel names
             print(self.channels[self.channels.find(',')+1:])
             if self.sweep_n>1:
                 self.rec_data['Sweep']= sorted(list(range(1,self.sweep_n+1))*(self.sweep_rows[2]-self.sweep_rows[1]-1))
@@ -44,6 +45,7 @@ class MEA_rec(object):
                     chan_val=self.rec_data["T(ms)"]
                 else:
                     chan_id= int(re.search(r'\d+', channel).group())
+                    chan_val= self.rec_data[channel]
             elif type(channel) is int:
                 chan_id= channel
                 chan_val= self.rec_data["CH"+str(chan_id)+"(mV)"]
@@ -58,8 +60,8 @@ class MEA_rec(object):
             mat[:,i]=chandata.loc[j]
         return mat
     
-    def get_time(self,sweep=None):
-        return self.get_chan("T(ms)",sweep)
+    def get_time(self):
+        return self.get_chan("T(ms)",1)
     
     def plot_chan(self, channel):
         
@@ -93,19 +95,7 @@ def do_analysis(rec,first_sweep=1, save =0):
         epsp2slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
     print(epsp1slopes)
     print(epsp2slopes)
-    if save>0:
-    #this will save the slope values in a file
-        heading="Response 1 \t PPR \n "
-        outlist=[]
-        for j,k in zip(epsp1slopes,epsp2slopes):
-            outlist.append(str(j)+' \t '+str(k/j)+' \n')
-        outfile=rec.file_name[:outfile.rfind'.']+'.dat'
-        f=open(outfile,'w')
-        f.seek(0)
-        f.write(heading)
-        f.writelines(outlist)
-        f.close()
-
+    
 if __name__ == "__main__":
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearin
     file_name = askopenfilename() # show an "Open" dialog box and return the path to the selected file
