@@ -69,6 +69,18 @@ class MEA_rec(object):
         plt.title("Channel " + str(channel))
         plt.xlabel("ms")
         plt.ylabel("mV")
+        
+    def notch_filter_mat(self, channel):
+        chan_mat = self.chan2matrix(channel)
+        filt_chan=np.zeros(np.shape(chan_mat))
+        for i,j in enumerate(chan_mat):
+            filt_chan[i]=trf.notch_filter(j,49,51,20000)
+        return filt_chan
+   
+    def notch_filter_chan(self,channel):
+        filt_chan=np.zeros(np.shape(self.get_chan(channel)))
+        filt_can=trf.notch_filter(self.get_chan(channel),49,51,20000)
+        return filt_chan
 
 
 def fepsp_slope(trace):

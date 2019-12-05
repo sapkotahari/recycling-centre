@@ -30,6 +30,7 @@ class MainApp():
             self.rec=mea.MEA_rec
             self.t_startR1=tk.DoubleVar(value=10.5)
             self.t_startR2=tk.DoubleVar(value=60.5)
+            self.filt_value = tk.BooleanVar() 
             self.chan=1
             self.sweep=None
             #GUI
@@ -46,6 +47,9 @@ class MainApp():
             tk.Label(self.master, text='Channel').grid(column=0, row=1)
             tk.Label(self.master, text='Sweep').grid(column=1, row=1)
             self.chan_combo=ttk.Combobox(master)
+            #filter checkbox
+            self.filter_box = tk.Checkbutton(master, text='Filter 50Hz', variable=self.filt_value)
+            self.filter_box.grid(column=2, row=1)
             #self.chan_combo['values']=tuple(range(1, 65))# this should be set after opening
             #self.chan_combo.current(0)# this should be set after opening
             self.chan_combo.grid(column=0, row=2)
@@ -93,6 +97,10 @@ class MainApp():
         if self.file_name!='':
             self.file_label['text']=self.file_name[self.file_name.rfind('/')+1:]#writes filename only
     
+    def notch_filter(self):
+        chan=self.chan_combo.get()
+        self.rec=self.rec.notch_filter(chan)
+        
     
     #needs to decide whether to have one single function for all plots or not
     def plot_traces(self):
@@ -111,8 +119,10 @@ class MainApp():
 
         
 
-        
-        self.axs[0].plot(self.rec.get_time(),self.rec.chan2matrix(chan))
+        if self.filt_value.get()==True: 
+            self.axs[0].plot(self.rec.get_time(),self.rec.notch_filter_mat(chan))
+        else:
+            self.axs[0].plot(self.rec.get_time(),self.rec.chan2matrix(chan))
         self.axs[1].plot(t, R1+2 * np.sin(2 * np.pi * t),'o') #change to actual trace
         self.axs[2].plot(t, 2 * np.sin(2 * np.pi * t),'r') #change to actual trace
         self.canvas.draw()

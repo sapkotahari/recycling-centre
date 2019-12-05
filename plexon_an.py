@@ -14,6 +14,7 @@ import neo
 from math import floor
 import scipy.signal as sig
 from quantities import Hz, s
+#from tracefunc import downsample,downsample_to,downsample_matrix_to,butter_lowpass,butter_lowpass_filter,bessel_lowpass,bessel_lowpass_filter
 #To do:
 #Funtion to remove artefacts
 #Standardise filtering
