@@ -30,6 +30,7 @@ class MEA_rec(object):
             self.rec_data=pd.read_csv(rec_file, skiprows= self.sweep_rows[1:],header=1)
             print(self.rec_info)#do stuff
             self.chan_list=self.channels[self.channels.find(',')+1:-1].split(",")#creating a list with channel names
+            self.sampling_freq=float(self.rec_info[self.rec_info.index('Fs=')+3:self.rec_info.index('kHz')])*1000
             print(self.channels[self.channels.find(',')+1:])
             if self.sweep_n>1:
                 self.rec_data['Sweep']= sorted(list(range(1,self.sweep_n+1))*(self.sweep_rows[2]-self.sweep_rows[1]-1))
@@ -53,11 +54,16 @@ class MEA_rec(object):
             chan_val=chan_val.loc[sweep]
         return chan_val
     
-    def chan2matrix(self, channel):
-        chandata=self.get_chan(channel)
-        mat=np.zeros((int(chandata.size/self.sweep_n),self.sweep_n))
-        for i,j in enumerate(chandata.index.drop_duplicates()):
-            mat[:,i]=chandata.loc[j]
+    def chan2matrix(self, channel,sweep=None):
+        if sweep != None: 
+            mat=self.get_chan(channel,sweep)
+            
+        else:
+            chandata=self.get_chan(channel)
+            mat=np.zeros((int(chandata.size/self.sweep_n),self.sweep_n))
+            
+            for i,j in enumerate(chandata.index.drop_duplicates()):
+                mat[:,i]=chandata.loc[j]
         return mat
     
     def get_time(self):
@@ -69,30 +75,35 @@ class MEA_rec(object):
         plt.title("Channel " + str(channel))
         plt.xlabel("ms")
         plt.ylabel("mV")
-        
-    def notch_filter_mat(self, channel):
-        chan_mat = self.chan2matrix(channel)
-        filt_chan=np.zeros(np.shape(chan_mat))
-        for i,j in enumerate(chan_mat):
-            filt_chan[i]=trf.notch_filter(j,49,51,20000)
-        return filt_chan
-   
-    def notch_filter_chan(self,channel):
+    
+       
+    def notch_filter_chan(self,channel,sweep=None):
         filt_chan=np.zeros(np.shape(self.get_chan(channel)))
         filt_can=trf.notch_filter(self.get_chan(channel),49,51,20000)
         return filt_chan
+        
+    def notch_filter_mat(self, channel, sweep=None):
+        if sweep!= None:
+            filt_chan=self.notch_filter_chan(channel,sweep)
+        else:
+            chan_mat = self.chan2matrix(channel)
+            filt_chan=np.zeros(np.shape(chan_mat))
+            for i,j in enumerate(chan_mat):
+                filt_chan[i]=trf.notch_filter(j,49,51,self.sampling_freq)
+        return filt_chan
+
 
 
 def fepsp_slope(trace):
     """finds the 20-80% slope using a diff approach for a fEPSP"""
     bsl=np.mean(trace[0:3])
-    peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1])
+    peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1]) 
     amp=trf.val_dist(bsl,peak)
     
-    twenty=trf.find_nearest(trace[0:np.argmin(trace)],bsl-amp*0.2)
-    eighty=trf.find_nearest(trace[0:np.argmin(trace)],bsl-amp*0.8)
+    twenty=trf.find_nearest(trace[0:np.argmin(trace)+1],bsl-amp*0.2)
+    eighty=trf.find_nearest(trace[0:np.argmin(trace)+1],bsl-amp*0.8)
     slope=np.mean(np.diff(trace[twenty:eighty]))
-    return slope
+    return slope,trace[twenty],trace[eighty],trace[np.argmin(trace)]
 
 def do_analysis(rec,first_sweep=1, save =0):
     """runs analysis of two slope resposenses"""
@@ -103,8 +114,8 @@ def do_analysis(rec,first_sweep=1, save =0):
     epsp1slopes=[]
     epsp2slopes=[]
     for i in range(first_sweep,rec.sweep_n+1):
-        epsp1slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp1start:epsp1start+80].values))
-        epsp2slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
+        epsp1slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp1start:epsp1start+80].values)[0])
+        epsp2slopes.append(fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values)[0])
     print(epsp1slopes)
     print(epsp2slopes)
     

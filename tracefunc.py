@@ -15,7 +15,7 @@ def find_nearest(array,value):
     return ind
 
 def val_dist(a,b):
-    """fids the distance between two values regardless of their sign"""
+    """finds the distance between two values regardless of their sign"""
     return abs(a-b)
 
 
@@ -84,36 +84,3 @@ def notch_filter(data, lowcut, highcut, fs, order=4):
     y = sig.lfilter(b, a, data)
     return y
 
-"""
-# time:   Time between samples
-# band:   The bandwidth around the centerline freqency that you wish to filter
-# freq:   The centerline frequency to be filtered
-# ripple: The maximum passband ripple that is allowed in db
-# order:  The filter order.  For FIR notch filters this is best set to 2 or 3,
-#         IIR filters are best suited for high values of order.  This algorithm
-#         is hard coded to FIR filters
-# filter_type: 'butter', 'bessel', 'cheby1', 'cheby2', 'ellip'
-# data:         the data to be filtered
-def notch_filter( data,time=0.00005, band=4, freq=50, ripple=1, order=4, filter_type='bessel'):
-    
-    fs   = 1/time
-    nyq  = fs/2.0
-    low  = freq - band/2.0
-    high = freq + band/2.0
-    low  = low/nyq
-    high = high/nyq
-    b, a = sig.iirfilter(order, [low, high], rp=ripple, btype='bandstop',
-                     analog=False, ftype=filter_type)
-    filtered_data = sig.lfilter(b, a, data)
-    return filtered_data
-
-#there are issue with the current version of notch filter
-def notch(f0=50,Q=30):
-    b,a=sig.lfilter(sig.iirnotch(f0, Q))
-    return b,a
-
-def notch_filter(data,f0=50,Q=30):
-    b,a=notch(f0,Q)
-    y=sig.lfilter(b,a,data)
-    return y
-   """ 

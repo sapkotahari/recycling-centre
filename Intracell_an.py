@@ -164,7 +164,7 @@ def find_perc(trace,ind,percentage, t_to_bsl= 30,onset='onset'):
     """finds a certain percentage of change for a given event, part_value 
     should be between 0 and 1. For example find_part(trace,70,0.2) 
     will find the index of the 20% value of the event in position 70 of trace. 
-    The analysis is performed on the reversed array to make sure the peak comes 
+    If onset='onset', the analysis is performed on the reversed array to make sure the peak comes 
     before the baseline. t_to_bsl is the max number of points between-baseline and peak, 
     too large may interfere with previous points, must be greater than 9"""
     

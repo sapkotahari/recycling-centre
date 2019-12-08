@@ -74,12 +74,15 @@ class MainApp():
             #sliders for subplots
             tk.Label(self.master, text='Response 1').grid(column=0, row=6)
             tk.Label(self.master, text='Response 2').grid(column=0, row=7)
-            self.slideR1 = tk.Scale(master, from_=0, to=100, resolution=0.1, orient='horizontal', length=400,
-                                    variable = self.t_startR1, command=self.plot_traces)#needs to be just subplot
+            self.slideR1 = tk.Scale(master, from_=0, to=100, resolution=0.05, orient='horizontal', length=400,
+                                    variable = self.t_startR1, command=self.plot_traces)
             self.slideR1.grid(column=1, row=6)
-            self.slideR2 = tk.Scale(master, from_=0, to=100, resolution=0.1, orient='horizontal', length=400,
-                                    variable = self.t_startR2, command=self.plot_traces)#needs to be just subplot
+            self.slideR2 = tk.Scale(master, from_=0, to=100, resolution=0.05, orient='horizontal', length=400,
+                                    variable = self.t_startR2, command=self.plot_traces)
             self.slideR2.grid(column=1, row=7)
+            self.sweep_range= tk.Entry(master,width=5)
+            self.sweep_range.insert(0,'1-20')
+            self.sweep_range.grid(column=3, row=5)
             self.analysis_button = tk.Button(master, text="Analysis", command=self.slope_analysis)
             self.analysis_button.grid(column=3, row=6)
             self.savesvg_button = tk.Button(master, text="Save SVG", command=self.save_svg)
@@ -90,7 +93,7 @@ class MainApp():
         self.rec=mea.MEA_rec(self.file_name)
         self.chan_combo['values']=self.rec.chan_list
         self.chan_combo.current(0)
-        self.sweep_combo['values']=('All',)+tuple(range(1, self.rec.sweep_n))
+        self.sweep_combo['values']=('All',)+tuple(range(1, self.rec.sweep_n+1))
         self.sweep_combo.current(0)
         self.label_file()
     def label_file(self):
@@ -102,58 +105,86 @@ class MainApp():
         self.rec=self.rec.notch_filter(chan)
         
     
-    #needs to decide whether to have one single function for all plots or not
+    def sub_plot_win(self, event_time, pre_event=True):
+        """creates the indexes for the subplots"""
+        event_ind=int(event_time)*int(self.rec.sampling_freq/1000) #converts from time to index
+        if pre_event==False:  ind_window=slice(event_ind+10,event_ind+80)
+        else: ind_window=slice(event_ind,event_ind+80)
+        
+        return ind_window
+    
+    #need to decide whether to have one single function for all plots or not
     def plot_traces(self,*slider):
+        rec=self.rec
         chan=self.chan_combo.get()
         time=self.rec.get_time()
-        if self.filt_value.get()==True: chan_mat=self.rec.notch_filter_mat(chan)  
-        else: chan_mat=self.rec.chan2matrix(chan)
-        
-        
-
         if self.sweep_combo.get()!='All': 
             sweep=int(self.sweep_combo.get())
+            R1_an,R2_an=self.slope_analysis(sweep,save=0)
+        else: 
+            sweep=None
+            R1_an,R2_an=self.slope_analysis(1,save=0)
+        
+        if self.filt_value.get()==True: chan_mat=self.rec.notch_filter_mat(chan,sweep)  
+        else: chan_mat=self.rec.chan2matrix(chan,sweep)
+        
 
-        R1=int(self.t_startR1.get()*20) #change to actual sampling freq currently 20KHz
-        R2=int(self.t_startR2.get()*20) #change to actual sampling freq currently 20KHz
-        window1=(R1-10,R1+40)
-        window2=(R2-10,R2+40)
 
-        t = np.arange(0, 3, .01)
+
+        window1=self.sub_plot_win(self.t_startR1.get())
+        window2=self.sub_plot_win(self.t_startR2.get())
+        twenty_eighty_peak1=R1_an[1:]
+        twenty_eighty_peak2=R2_an[1:]
+
+        
 
         for i in self.axs:
-            i.clear()  #self.ax = self.fig.add_subplot(111)
+            i.clear()
+            i.set_xlabel('ms')
+            i.set_ylabel('mV')
 
+            
+        #main  plot
         self.axs[0].plot(time,chan_mat)
-        self.axs[1].plot(time[R1-10:R1+40],chan_mat[R1-10:R1+40,:],'o') #change to actual trace
-        self.axs[2].plot(t, 2 * np.sin(2 * np.pi * t),'r') #change to actual trace
+        #Shall we define a function for the subplots?
+        #left subplot
+        self.axs[1].plot(time[window1],chan_mat[window1]) 
+        self.axs[1].hlines(twenty_eighty_peak1,self.axs[1].get_xlim()[0],self.axs[1].get_xlim()[1],'r')
+        self.axs[1].vlines(self.t_startR1.get(),self.axs[1].get_ylim()[0],self.axs[1].get_ylim()[1])
+        self.axs[1].text(0,1,str(R1_an[0]),horizontalalignment='left',transform=self.axs[1].transAxes)
+        #right subplot
+        self.axs[2].plot(time[window2],chan_mat[window2]) 
+        self.axs[2].hlines(twenty_eighty_peak2,self.axs[2].get_xlim()[0],self.axs[2].get_xlim()[1],'r')
+        self.axs[2].vlines(self.t_startR2.get(),self.axs[2].get_ylim()[0],self.axs[2].get_ylim()[1])
+        self.axs[2].text(0,1,str(R2_an[0]),horizontalalignment='left',transform=self.axs[2].transAxes)
+        #draw
         self.canvas.draw()
-
-        
-
-        
-
-        
         
     def save_svg(self):
         self.fig.savefig(self.file_name[:self.file_name.rfind('.')]+self.chan_combo.get()+'.svg')
     
-    def slope_analysis(self):
+    def slope_analysis(self,sweep=None,save=1):
+        
         chan=self.chan_combo.get()
         rec=self.rec
-        R1=self.t_startR1.get()
-        R2=self.t_startR2.get()
-        first_sweep=1
-        epsp1start=int(20*R1) #only works for 20KHz sampling
-        epsp2start=int(20*R2) #only works for 20KHz sampling
+        window1=self.sub_plot_win(self.t_startR1.get(),pre_event=False)
+        window2=self.sub_plot_win(self.t_startR2.get(),pre_event=False)
+        first_sweep,last_sweep=[int(x) for x in self.sweep_range.get().split("-")]
+        
+        
+
         epsp1slopes=[]
         epsp2slopes=[]
-        for i in range(first_sweep,rec.sweep_n+1):
-            epsp1slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[epsp1start:epsp1start+80].values))
-            epsp2slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[epsp2start:epsp2start+80].values))
+        for i in range(first_sweep,last_sweep+1):
+            if self.filt_value.get()==True:
+                epsp1slopes.append(mea.fepsp_slope(rec.notch_filter_chan(chan,i)[window1].values)[0])
+                epsp2slopes.append(mea.fepsp_slope(rec.notch_filter_chan(chan,i)[window2].values)[0])
+            else:
+                epsp1slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[window1].values)[0])
+                epsp2slopes.append(mea.fepsp_slope(rec.get_chan(chan,i)[window2].values)[0])
         print(epsp1slopes)
         print(epsp2slopes)
-        save=1
+        
         if save>0:
             #this will save the slope values in a file
             heading="Response 1 \t PPR (R2/R1)\n "
@@ -166,7 +197,11 @@ class MainApp():
             f.write(heading)
             f.writelines(outlist)
             f.close()
-        
+        if sweep!=None:
+            if self.filt_value.get()==True:
+                return mea.fepsp_slope(rec.notch_filter_chan(chan,sweep)[window1].values), mea.fepsp_slope(rec.notch_filter_chan(chan,sweep)[window2].values)
+            else:
+                return mea.fepsp_slope(rec.get_chan(chan,sweep)[window1].values), mea.fepsp_slope(rec.get_chan(chan,sweep)[window2].values)
         
 
         
