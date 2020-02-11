@@ -191,7 +191,7 @@ class MainApp():
             outlist=[]
             for j,k in zip(epsp1slopes,epsp2slopes):
                 outlist.append(str(j)+' \t '+str(k/j)+' \n')
-            outfile=self.file_name[:self.file_name.rfind('.')]+'.dat'
+            outfile=self.file_name[:self.file_name.rfind('.')]+'.txt'
             f=open(outfile,'w')
             f.seek(0)
             f.write(heading)
