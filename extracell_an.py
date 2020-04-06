@@ -9,10 +9,16 @@ def get_threshold(channel,sdmult=4):
     return threshold
 
 def remove_large_spikes(channel, large_spk_mult=7):
+    
+    try:
+        chan_ar=channel.as_array()
+    except:
+        chan_ar=channel
+    
     #find positive spikes
-    large_pos_spikes_ind=np.where(channel.as_array()>get_threshold(channel,large_spk_mult))[0]
+    large_pos_spikes_ind=np.where(chan_ar>get_threshold(channel,large_spk_mult))[0]
     #find negative spikes
-    large_neg_spikes_ind=np.where(channel.as_array()<-get_threshold(channel,large_spk_mult))[0]
+    large_neg_spikes_ind=np.where(chan_ar<-get_threshold(channel,large_spk_mult))[0]
     #put them together 
     large_spikes_ind=list(large_pos_spikes_ind)+list(large_neg_spikes_ind)
     #remove them
@@ -24,10 +30,15 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     """find peaks above a threshold, if positive_only==1 it only thaks positive peaks.
     event_points gives number of points describing the event, 
     high numbers will reduce false positive but increase false negatives """ 
+    try:
+        chan_ar=channel.as_array()
+    except:
+        chan_ar=channel
+
     if threshold==None: threshold=get_threshold(channel)
      
     #gets all the positive first
-    supra_thres=np.where((channel.as_array())>get_threshold(channel),channel,0)
+    supra_thres=np.where((chan_ar)>get_threshold(channel),channel,0)
     polarity=np.greater
     #find all possible peaks above positive threshold
     event_inds=(sig.argrelextrema(supra_thres,polarity, axis=0, order=(event_points), mode='clip'))
@@ -35,7 +46,7 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
      #if you also want the negatives
     if positive_only!=1:#need to change polarity
         print("Both positive and negative events will be analysed")
-        neg_supra_thres=np.where((channel.as_array())<-get_threshold(channel),channel,0)
+        neg_supra_thres=np.where((chan_ar)<-get_threshold(channel),channel,0)
         neg_event_inds=(sig.argrelextrema(neg_supra_thres,np.less, axis=0, order=(event_points), mode='clip'))
         neg_event_inds=neg_event_inds[0]
         event_inds=list(event_inds)+list(neg_event_inds)
@@ -45,16 +56,26 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
 
 def plot_spikes(channel,spk_ind=None):
     """plots spikes as red dots on the black trace"""
+    try:
+        chan_ar=channel.as_array()
+    except:
+        chan_ar=channel
+
     if spk_ind==None: find_peaks(channel)
-    ch_ar=channel.as_array()
+    
     plt.figure;
     plt.plot(channel.times,channel,'k')
-    plt.plot(channel.times[spk_ind],ch_ar[spk_ind],'ro')
+    plt.plot(channel.times[spk_ind],chan_ar[spk_ind],'ro')
  
 def coastline(channel):
     """returns the coastline using the formula in Niknazar et al.2013  
     only the array part of the neo analog signals is used"""
-    return np.sum(np.absolute(np.diff(channel.as_array()[:,0])))
+    try:
+        chan_ar=channel.as_array()
+    except:
+        chan_ar=channel
+
+    return np.sum(np.absolute(np.diff(chan_ar[:,0])))
 
 def find_art(rec):
     """find large events that go above threshold on more than one channel at the time
