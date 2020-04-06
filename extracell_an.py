@@ -1,3 +1,4 @@
+import numpy as np
 def get_threshold(channel,sdmult=4):
     """gets the threshold as 4*SD"""
     try:
@@ -54,18 +55,21 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     print("with a "+str(event_points)+" points time window")
     return list(event_inds)
 
-def plot_spikes(channel,spk_ind=None):
+def plot_spikes(channel,freq=200, spk_ind=None):
     """plots spikes as red dots on the black trace"""
     try:
         chan_ar=channel.as_array()
+        chan_t=channel.times
     except:
+        
         chan_ar=channel
+        chan_t=np.linspace(0.0, len(char_ar)/freq,num=len(char_ar))
 
     if spk_ind==None: find_peaks(channel)
     
     plt.figure;
-    plt.plot(channel.times,channel,'k')
-    plt.plot(channel.times[spk_ind],chan_ar[spk_ind],'ro')
+    plt.plot(chan_t,chan_ar,'k')
+    plt.plot(chan_t[spk_ind],chan_ar[spk_ind],'ro')
  
 def coastline(channel):
     """returns the coastline using the formula in Niknazar et al.2013  
