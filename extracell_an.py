@@ -72,10 +72,10 @@ def coastline(channel):
     only the array part of the neo analog signals is used"""
     try:
         chan_ar=channel.as_array()
+        return np.sum(np.absolute(np.diff(chan_ar[:,0])))
     except:
         chan_ar=channel
-
-    return np.sum(np.absolute(np.diff(chan_ar[:,0])))
+        return np.sum(np.absolute(np.diff(chan_ar)))
 
 def find_art(rec):
     """find large events that go above threshold on more than one channel at the time
