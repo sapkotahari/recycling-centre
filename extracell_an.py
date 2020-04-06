@@ -1,4 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
+
+import scipy.signal as sig
+
+
 def get_threshold(channel,sdmult=4):
     """gets the threshold as 4*SD"""
     try:
