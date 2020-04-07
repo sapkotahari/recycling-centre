@@ -68,7 +68,7 @@ def plot_spikes(channel,freq=200, spk_ind=None):
     except:
         
         chan_ar=channel
-        chan_t=np.linspace(0.0, len(char_ar)/freq,num=len(char_ar))
+        chan_t=np.linspace(0.0, len(chan_ar)/freq,num=len(chan_ar))
 
     if spk_ind==None: find_peaks(channel)
     
