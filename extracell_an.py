@@ -44,7 +44,7 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     if threshold==None: threshold=get_threshold(channel)
      
     #gets all the positive first
-    supra_thres=np.where((chan_ar)>get_threshold(channel),channel,0)
+    supra_thres=np.where((chan_ar)>get_threshold(channel,sdmult=threshold),channel,0)
     polarity=np.greater
     #find all possible peaks above positive threshold
     event_inds=(sig.argrelextrema(supra_thres,polarity, axis=0, order=(event_points), mode='clip'))
@@ -52,7 +52,7 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
      #if you also want the negatives
     if positive_only!=1:#need to change polarity
         print("Both positive and negative events will be analysed")
-        neg_supra_thres=np.where((chan_ar)<-get_threshold(channel),channel,0)
+        neg_supra_thres=np.where((chan_ar)<-get_threshold(channel,sdmult=threshold),channel,0)
         neg_event_inds=(sig.argrelextrema(neg_supra_thres,np.less, axis=0, order=(event_points), mode='clip'))
         neg_event_inds=neg_event_inds[0]
         event_inds=list(event_inds)+list(neg_event_inds)
@@ -60,7 +60,7 @@ def find_peaks(channel,  event_points=10, positive_only=0,threshold=None):
     print("with a "+str(event_points)+" points time window")
     return list(event_inds)
 
-def plot_spikes(channel,freq=200, spk_ind=None):
+def plot_spikes(channel,spk_ind=None,freq=200):
     """plots spikes as red dots on the black trace"""
     try:
         chan_ar=channel.as_array()
@@ -69,9 +69,10 @@ def plot_spikes(channel,freq=200, spk_ind=None):
         
         chan_ar=channel
         chan_t=np.linspace(0.0, len(chan_ar)/freq,num=len(chan_ar))
+        
 
-    if spk_ind==None: find_peaks(channel)
     
+    if spk_ind==None: spk_ind=find_peaks(channel)
     plt.figure;
     plt.plot(chan_t,chan_ar,'k')
     plt.plot(chan_t[spk_ind],chan_ar[spk_ind],'ro')
