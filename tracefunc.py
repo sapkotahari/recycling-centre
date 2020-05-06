@@ -11,8 +11,9 @@ import scipy.signal as sig
 
 def find_nearest(array,value):
     """finds index of nearest value in a array"""
+    array = np.asarray(array)
     ind = (np.abs(array-value)).argmin()
-    return ind
+    return array[ind]
 
 def val_dist(a,b):
     """finds the distance between two values regardless of their sign"""
