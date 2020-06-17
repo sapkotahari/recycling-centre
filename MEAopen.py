@@ -100,8 +100,8 @@ def fepsp_slope(trace):
     peak=np.mean(trace[np.argmin(trace)-1:np.argmin(trace)+1]) 
     amp=trf.val_dist(bsl,peak)
     
-    twenty=int(trf.find_nearest(trace[0:np.argmin(trace)+1],bsl-amp*0.2))
-    eighty=int(trf.find_nearest(trace[0:np.argmin(trace)+1],bsl-amp*0.8))
+    twenty=int(trf.find_nearest_ind(trace[0:np.argmin(trace)+1],bsl-amp*0.2))
+    eighty=int(trf.find_nearest_ind(trace[0:np.argmin(trace)+1],bsl-amp*0.8))
     slope=np.mean(np.diff(trace[twenty:eighty]))
     return slope,trace[twenty],trace[eighty],trace[np.argmin(trace)]
 
