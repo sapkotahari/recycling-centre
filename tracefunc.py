@@ -15,6 +15,12 @@ def find_nearest(array,value):
     ind = (np.abs(array-value)).argmin()
     return array[ind]
 
+def find_nearest_ind(array,value):
+    """finds index of nearest value in a array"""
+    array = np.asarray(array)
+    ind = (np.abs(array-value)).argmin()
+    return ind
+
 def val_dist(a,b):
     """finds the distance between two values regardless of their sign"""
     return abs(a-b)
