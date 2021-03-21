@@ -24,5 +24,5 @@ file_name = askopenfilename()
 rec=mea.MEA_rec(file_name)
 
 m=rec.chan2matrix(channel)
-plt.plot(m.mean(1))
+plt.plot(rec.get_time(),m.mean(1))
 plt.show()
