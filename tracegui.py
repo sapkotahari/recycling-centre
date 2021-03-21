@@ -108,8 +108,8 @@ class MainApp():
     def sub_plot_win(self, event_time, pre_event=True):
         """creates the indexes for the subplots"""
         event_ind=int(event_time)*int(self.rec.sampling_freq/1000) #converts from time to index
-        if pre_event==False:  ind_window=slice(event_ind+10,event_ind+80)
-        else: ind_window=slice(event_ind,event_ind+80)
+        if pre_event==False:  ind_window=slice(event_ind+10,event_ind+100)
+        else: ind_window=slice(event_ind,event_ind+100)
         
         return ind_window
     
