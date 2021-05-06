@@ -76,7 +76,16 @@ def bessel_lowpass_filter(data, cutoff, fs, order=4):
     y = sig.lfilter(b, a, data)
     return y
 
+def butter_highpass(cutoff, fs, order=2):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    return b, a
 
+def butter_highpass_filter(data, cutoff, fs, order=2):
+    b, a = butter_highpass(cutoff, fs, order=order)
+    y = signal.filtfilt(b, a, data)
+    return y
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
